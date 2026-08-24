@@ -1,3 +1,5 @@
+// --- widget interativo (seção "experimente") ---
+
 const DEFINITIONS = {
   vendas: {
     status: "resolvido",
@@ -30,23 +32,84 @@ function render(scope, animate) {
   statusEl.textContent = entry.status;
   statusEl.dataset.state = entry.state;
   if (!animate) {
-    textEl.textContent = `"${entry.text}"`;
+    textEl.textContent = '"' + entry.text + '"';
     return;
   }
   textEl.style.opacity = 0;
-  window.setTimeout(() => {
-    textEl.textContent = `"${entry.text}"`;
+  window.setTimeout(function () {
+    textEl.textContent = '"' + entry.text + '"';
     textEl.style.opacity = 1;
   }, 120);
 }
 
-chips.forEach((chip) => {
-  chip.addEventListener("click", () => {
-    chips.forEach((c) => c.setAttribute("aria-pressed", "false"));
-    chip.setAttribute("aria-pressed", "true");
-    render(chip.dataset.scope, true);
+if (chips.length) {
+  chips.forEach(function (chip) {
+    chip.addEventListener("click", function () {
+      chips.forEach(function (c) { c.setAttribute("aria-pressed", "false"); });
+      chip.setAttribute("aria-pressed", "true");
+      render(chip.dataset.scope, true);
+    });
   });
-});
+  textEl.style.transition = "opacity 0.15s ease";
+  render("vendas", false);
+}
 
-textEl.style.transition = "opacity 0.15s ease";
-render("vendas", false);
+// --- sidebar mobile ---
+
+const sidebar = document.getElementById("sidebar");
+const toggle = document.getElementById("sidebarToggle");
+
+if (toggle) {
+  toggle.addEventListener("click", function () {
+    const isOpen = sidebar.classList.toggle("open");
+    toggle.setAttribute("aria-expanded", String(isOpen));
+  });
+
+  document.querySelectorAll(".sidebar__nav a").forEach(function (link) {
+    link.addEventListener("click", function () {
+      sidebar.classList.remove("open");
+      toggle.setAttribute("aria-expanded", "false");
+    });
+  });
+}
+
+// --- destaque do link ativo no sumário, por seção visível ---
+
+const sections = document.querySelectorAll(".doc-section[id]");
+const navLinks = document.querySelectorAll(".sidebar__nav a");
+
+if ("IntersectionObserver" in window && sections.length) {
+  const observer = new IntersectionObserver(
+    function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        const id = entry.target.getAttribute("id");
+        navLinks.forEach(function (link) {
+          link.classList.toggle("active", link.getAttribute("href") === "#" + id);
+        });
+      });
+    },
+    { rootMargin: "-10% 0px -70% 0px" }
+  );
+  sections.forEach(function (section) { observer.observe(section); });
+}
+
+// --- mermaid ---
+
+if (window.mermaid) {
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: "base",
+    fontFamily: "IBM Plex Mono, monospace",
+    themeVariables: {
+      background: "#f6f5f2",
+      primaryColor: "#eeece6",
+      primaryTextColor: "#5f2736",
+      primaryBorderColor: "#5f2736",
+      lineColor: "#5f2736",
+      secondaryColor: "#98b1c8",
+      tertiaryColor: "#f6f5f2",
+      fontSize: "14px",
+    },
+  });
+}
