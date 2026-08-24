@@ -1,157 +1,734 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="utf-8">
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>onimos — documentação</title>
-<meta name="description" content="Documentação técnica do onimos: um feature store para o significado de palavras em contexto, usado como camada de grounding antes de agentes de IA.">
-<link rel="icon" href="assets/logo-original.png">
+<title>onimos — a camada que resolve o que sua IA não entendeu</title>
+<meta name="description" content="onimos: um feature store para o significado de palavras em contexto. Camada de grounding antes de um agente de IA executar uma tarefa.">
+<link rel="icon" type="image/png" href="assets/dino-icon.png">
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;0,800;1,500&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/base16/black-metal-khold.min.css">
+
+<style>
+/* ============ TOKENS ============ */
+:root{
+  --paper:#F4EEDD;
+  --paper-deep:#ECE2C6;
+  --card:#FBF8EF;
+  --ink:#211A2D;
+  --ink-soft:#5B5266;
+  --ink-faint:#8B8394;
+  --gold:#5F2736;
+  --gold-soft:#C7B3B9;
+  --gold-line: rgba(95,39,54,.35);
+  --resolved:#2E6B4C;
+  --resolved-bg:#E2ECE1;
+  --resolved-line:#B7D2B9;
+  --ambiguous:#A13A3E;
+  --ambiguous-bg:#F3E2DE;
+  --ambiguous-line:#E2B5AE;
+  --code-bg:#211A2D;
+  --code-ink:#EFE9F7;
+  --line: rgba(33,26,45,.14);
+  --line-soft: rgba(33,26,45,.08);
+
+  --font-display:'Glinker','Fredoka',system-ui,sans-serif;
+  --font-body:'Montserrat',system-ui,sans-serif;
+  --font-mono:'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+
+  --maxw: 1180px;
+  --radius: 14px;
+}
+
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+@media (prefers-reduced-motion: reduce){
+  html{scroll-behavior:auto;}
+  *{animation-duration:.001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important;}
+}
+
+body{
+  margin:0;
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--font-body);
+  font-weight:500;
+  line-height:1.65;
+  -webkit-font-smoothing:antialiased;
+}
+
+a{color:inherit;}
+:focus-visible{outline:3px solid var(--gold); outline-offset:3px; border-radius:4px;}
+
+img{max-width:100%; display:block;}
+
+.wrap{max-width:var(--maxw); margin:0 auto; padding:0 clamp(20px,4vw,48px);}
+
+h1,h2,h3,h4{
+  font-family:var(--font-display);
+  font-weight:600;
+  margin:0;
+  color:var(--ink);
+  letter-spacing:-0.01em;
+}
+
+p{margin:0 0 1em;}
+p:last-child{margin-bottom:0;}
+
+.eyebrow{
+  font-family:var(--font-mono);
+  font-size:.72rem;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--gold);
+  font-weight:600;
+  display:inline-flex;
+  align-items:center;
+  gap:.5em;
+}
+.eyebrow::before{
+  content:"";
+  width:18px; height:1px;
+  background:var(--gold);
+  display:inline-block;
+}
+
+code, pre{font-family:var(--font-mono);}
+
+/* ============ HEADER / NAV ============ */
+header.site{
+  position:sticky; top:0; z-index:40;
+  background:rgba(244,238,221,.92);
+  backdrop-filter: blur(10px);
+  border-bottom:1px solid var(--line);
+}
+.nav-row{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:14px clamp(20px,4vw,48px);
+  max-width:var(--maxw); margin:0 auto;
+  gap:20px;
+}
+.brand{
+  display:flex; align-items:center; gap:9px;
+  font-family:var(--font-display);
+  font-weight:600; font-size:1.25rem;
+  text-decoration:none; color:var(--ink);
+}
+.brand-icon{
+  width:30px; height:30px; object-fit:contain;
+}
+.brand .dot{
+  width:9px; height:9px; border-radius:50%;
+  background:var(--gold);
+}
+.progress-track{
+  position:absolute; left:0; right:0; bottom:-1px; height:2px;
+  background:transparent;
+}
+.progress-bar{
+  height:100%; width:0%;
+  background:var(--gold);
+  transition:width .12s linear;
+}
+
+nav.toc{
+  display:flex; gap:2px; overflow-x:auto;
+  scrollbar-width:none;
+}
+nav.toc::-webkit-scrollbar{display:none;}
+nav.toc a{
+  white-space:nowrap;
+  font-size:.82rem; font-weight:600;
+  text-decoration:none;
+  color:var(--ink-soft);
+  padding:8px 12px; border-radius:20px;
+  transition:background .15s, color .15s;
+}
+nav.toc a:hover{color:var(--ink); background:var(--paper-deep);}
+nav.toc a.active{color:var(--ink); background:var(--gold-soft);}
+
+.nav-cta{
+  display:flex; align-items:center; gap:10px; flex-shrink:0;
+}
+.btn{
+  display:inline-flex; align-items:center; gap:8px;
+  font-family:var(--font-body); font-weight:700; font-size:.85rem;
+  padding:10px 18px; border-radius:100px;
+  text-decoration:none; cursor:pointer; border:1.5px solid transparent;
+  transition:transform .15s ease, box-shadow .15s ease, background .15s ease;
+}
+.btn:hover{transform:translateY(-1px);}
+.btn-primary{background:var(--ink); color:var(--paper);}
+.btn-primary:hover{box-shadow:0 6px 18px rgba(33,26,45,.28);}
+.btn-ghost{border-color:var(--line); color:var(--ink);}
+.btn-ghost:hover{background:var(--paper-deep);}
+.btn-gold{background:var(--gold); color:#fff;}
+.btn-gold:hover{box-shadow:0 6px 18px rgba(173,126,40,.35);}
+
+.hamburger{display:none; background:none; border:none; cursor:pointer; padding:6px;}
+.hamburger span{display:block; width:22px; height:2px; background:var(--ink); margin:5px 0; border-radius:2px;}
+
+/* ============ HERO ============ */
+.hero{
+  padding:clamp(56px,10vw,110px) 0 clamp(40px,6vw,64px);
+  position:relative;
+  overflow:hidden;
+}
+.hero::before{
+  content:"";
+  position:absolute; inset:0;
+  background:
+    radial-gradient(60% 50% at 85% 8%, rgba(173,126,40,.14), transparent 60%),
+    radial-gradient(45% 40% at 8% 90%, rgba(46,107,76,.10), transparent 60%);
+  pointer-events:none;
+}
+.hero-inner{position:relative;}
+
+.headword-row{
+  display:flex; align-items:baseline; gap:16px; flex-wrap:wrap;
+  margin-bottom:10px;
+}
+.headword{
+  font-family:var(--font-display);
+  font-weight:700;
+  font-size:clamp(3rem,9vw,6.2rem);
+  line-height:.95;
+  letter-spacing:-0.02em;
+}
+.hero-icon{
+  width:clamp(64px,9vw,96px);
+  height:clamp(64px,9vw,96px);
+  object-fit:contain;
+  flex-shrink:0;
+}
+.phonetic{
+  font-family:var(--font-mono);
+  color:var(--ink-faint);
+  font-size:clamp(1rem,2vw,1.3rem);
+  font-weight:500;
+}
+.pos-tag{
+  font-family:var(--font-mono);
+  font-size:.85rem;
+  color:var(--gold);
+  font-style:italic;
+  margin-bottom:28px;
+}
+
+.definition-block{
+  max-width:820px;
+  margin-bottom:8px;
+}
+.definition-block .num{
+  font-family:var(--font-display);
+  color:var(--gold);
+  font-weight:700;
+  margin-right:.4em;
+}
+.definition-block p{
+  font-size:clamp(1.15rem,2.4vw,1.55rem);
+  color:var(--ink);
+  font-weight:500;
+  line-height:1.5;
+}
+
+.example-usage{
+  max-width:760px;
+  margin:22px 0 36px;
+  padding:16px 20px;
+  border-left:3px solid var(--gold-line);
+  font-style:italic;
+  color:var(--ink-soft);
+  font-size:1rem;
+}
+.example-usage b{
+  font-style:normal;
+  color:var(--ink);
+  font-weight:700;
+}
+
+.hero-cta{display:flex; flex-wrap:wrap; gap:12px; margin-bottom:34px;}
+
+.credibility-strip{
+  display:flex; flex-wrap:wrap; gap:22px;
+  font-family:var(--font-mono);
+  font-size:.78rem;
+  color:var(--ink-faint);
+}
+.credibility-strip span{display:flex; align-items:center; gap:8px;}
+.credibility-strip .sep{width:4px; height:4px; border-radius:50%; background:var(--ink-faint);}
+
+/* ============ SECTION SCAFFOLD ============ */
+section{
+  padding:clamp(48px,7vw,88px) 0;
+  border-top:1px solid var(--line);
+}
+section:first-of-type{border-top:none;}
+
+.section-head{
+  display:flex; align-items:flex-end; justify-content:space-between;
+  gap:24px; margin-bottom:36px; flex-wrap:wrap;
+}
+.section-head h2{
+  font-size:clamp(1.7rem,3.4vw,2.5rem);
+  margin-top:8px;
+}
+.section-kicker{max-width:640px;}
+
+.lede{
+  font-size:1.08rem;
+  color:var(--ink-soft);
+  max-width:760px;
+  margin-bottom:1.4em;
+}
+
+.prose{max-width:760px; color:var(--ink-soft); font-size:1rem;}
+.prose strong{color:var(--ink); font-weight:700;}
+
+/* alternate section tint */
+.tint{background:var(--paper-deep);}
+
+/* ============ DEMO (elevated) ============ */
+.demo-shell{
+  background:var(--card);
+  border:1.5px solid var(--line);
+  border-radius:24px;
+  padding:clamp(22px,4vw,40px);
+  box-shadow:0 18px 50px -20px rgba(33,26,45,.25);
+}
+.demo-grid{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap:32px;
+  align-items:start;
+}
+@media(max-width:860px){.demo-grid{grid-template-columns:1fr;}}
+
+.demo-label{
+  font-family:var(--font-mono);
+  font-size:.72rem; letter-spacing:.1em; text-transform:uppercase;
+  color:var(--ink-faint); margin-bottom:12px; display:block;
+}
+.pill-row{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:26px;}
+.pill{
+  font-family:var(--font-body); font-weight:700; font-size:.85rem;
+  padding:9px 16px; border-radius:100px;
+  border:1.5px solid var(--line);
+  background:var(--card);
+  cursor:pointer;
+  transition:all .15s ease;
+}
+.pill:hover{border-color:var(--gold);}
+.pill.is-active{
+  background:var(--ink); color:var(--paper); border-color:var(--ink);
+}
+
+.demo-output{
+  border-radius:16px;
+  padding:24px;
+  min-height:220px;
+  border:1.5px solid var(--line-soft);
+  background:var(--paper);
+  display:flex; flex-direction:column; gap:14px;
+  transition:background .2s ease, border-color .2s ease;
+}
+.demo-output.state-resolved{background:var(--resolved-bg); border-color:var(--resolved-line);}
+.demo-output.state-ambiguous{background:var(--ambiguous-bg); border-color:var(--ambiguous-line);}
+
+.status-badge{
+  display:inline-flex; align-items:center; gap:8px;
+  font-family:var(--font-mono); font-weight:600; font-size:.78rem;
+  text-transform:uppercase; letter-spacing:.06em;
+  padding:6px 12px; border-radius:100px;
+  width:max-content;
+}
+.status-badge .dot{width:8px; height:8px; border-radius:50%;}
+.status-badge.resolved{color:var(--resolved); background:rgba(46,107,76,.12);}
+.status-badge.resolved .dot{background:var(--resolved);}
+.status-badge.ambiguous{color:var(--ambiguous); background:rgba(161,58,62,.12);}
+.status-badge.ambiguous .dot{background:var(--ambiguous);}
+
+.demo-def{
+  font-size:1.15rem; font-weight:600; color:var(--ink);
+  line-height:1.45;
+}
+.demo-candidates{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:8px;}
+.demo-candidates li{
+  font-size:.95rem; color:var(--ink-soft);
+  padding:10px 14px; background:var(--card);
+  border-radius:10px; border:1px solid var(--line-soft);
+}
+.demo-note{font-size:.85rem; color:var(--ink-faint);}
+
+/* ============ COMPARISON CARDS ============ */
+.compare-grid{
+  display:grid; grid-template-columns:1fr auto 1fr; gap:0;
+  align-items:stretch;
+}
+@media(max-width:760px){.compare-grid{grid-template-columns:1fr;}}
+.compare-col{
+  background:var(--card);
+  border:1.5px solid var(--line);
+  padding:28px;
+  display:flex; flex-direction:column; gap:16px;
+}
+.compare-col:first-child{border-radius:16px 0 0 16px;}
+.compare-col:last-child{border-radius:0 16px 16px 0; border-left:none;}
+@media(max-width:760px){
+  .compare-col:first-child{border-radius:16px 16px 0 0;}
+  .compare-col:last-child{border-radius:0 0 16px 16px; border-left:1.5px solid var(--line); border-top:none;}
+}
+.compare-vs{
+  display:flex; align-items:center; justify-content:center;
+  padding:0 20px;
+  font-family:var(--font-display); font-weight:700;
+  color:var(--gold); font-size:1rem;
+  background:var(--card); border-top:1.5px solid var(--line); border-bottom:1.5px solid var(--line);
+}
+@media(max-width:760px){.compare-vs{padding:14px 0; border-left:1.5px solid var(--line); border-right:1.5px solid var(--line); border-top:none; border-bottom:none;}}
+.compare-col h4{font-size:1.05rem; margin-bottom:2px;}
+.compare-row{
+  display:flex; justify-content:space-between; gap:12px;
+  padding:10px 0; border-top:1px dashed var(--line);
+  font-size:.92rem;
+}
+.compare-row:first-of-type{border-top:none;}
+.compare-row .k{color:var(--ink-faint); font-family:var(--font-mono); font-size:.78rem; padding-top:2px;}
+.compare-row .v{color:var(--ink); font-weight:600; text-align:right;}
+
+/* ============ CODE BLOCKS ============ */
+.code-card{
+  border-radius:14px; overflow:hidden;
+  background:var(--code-bg);
+  border:1px solid rgba(255,255,255,.06);
+  margin:20px 0;
+}
+.code-card .code-title{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:10px 16px;
+  font-family:var(--font-mono); font-size:.75rem; color:rgba(239,233,247,.55);
+  border-bottom:1px solid rgba(255,255,255,.08);
+}
+.code-card pre{
+  margin:0; padding:20px; overflow-x:auto;
+  font-size:.85rem; line-height:1.6; color:var(--code-ink);
+}
+.code-card code{background:none;}
+
+/* ============ STAT CARDS ============ */
+.stat-track{
+  display:flex; gap:16px; flex-wrap:wrap;
+  margin:28px 0;
+}
+.stat-card{
+  flex:1 1 200px;
+  background:var(--card); border:1.5px solid var(--line);
+  border-radius:14px; padding:22px;
+}
+.stat-card .stat-num{
+  font-family:var(--font-display); font-weight:700;
+  font-size:2.1rem; color:var(--gold); line-height:1;
+  margin-bottom:8px;
+}
+.stat-card .stat-label{font-size:.85rem; color:var(--ink-soft);}
+.stat-card.win{border-color:var(--resolved-line); background:var(--resolved-bg);}
+.stat-card.win .stat-num{color:var(--resolved);}
+
+/* ============ FEATURE CARD GRID ============ */
+.feature-grid{
+  display:grid; grid-template-columns:repeat(2,1fr); gap:20px;
+}
+@media(max-width:760px){.feature-grid{grid-template-columns:1fr;}}
+.feature-card{
+  background:var(--card); border:1.5px solid var(--line);
+  border-radius:16px; padding:24px;
+}
+.feature-card .icon-num{
+  font-family:var(--font-mono); color:var(--gold);
+  font-size:.8rem; margin-bottom:10px; display:block;
+}
+.feature-card h4{font-size:1.05rem; margin-bottom:8px;}
+.feature-card p{color:var(--ink-soft); font-size:.92rem;}
+
+/* ============ PIPELINE / ARCHITECTURE ============ */
+.pipeline{
+  display:flex; align-items:stretch; gap:0; overflow-x:auto;
+  padding:8px 0 20px;
+}
+.pipe-step{
+  flex:0 0 200px;
+  background:var(--card); border:1.5px solid var(--line); border-radius:14px;
+  padding:18px; position:relative; margin-right:34px;
+}
+.pipe-step:last-child{margin-right:0;}
+.pipe-step::after{
+  content:"→";
+  position:absolute; right:-30px; top:50%; transform:translateY(-50%);
+  font-family:var(--font-display); font-size:1.3rem; color:var(--gold);
+}
+.pipe-step:last-child::after{content:none;}
+.pipe-step .k{font-family:var(--font-mono); font-size:.7rem; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.06em;}
+.pipe-step h4{font-size:.95rem; margin:6px 0 6px;}
+.pipe-step p{font-size:.82rem; color:var(--ink-soft);}
+.pipe-step.branch-a{border-color:var(--resolved-line); background:var(--resolved-bg);}
+.pipe-step.branch-b{border-color:var(--ambiguous-line); background:var(--ambiguous-bg);}
+
+/* ============ CASE STUDY ============ */
+.case-query{
+  font-family:var(--font-display); font-weight:600;
+  font-size:clamp(1.2rem,2.6vw,1.6rem);
+  padding:22px 26px; border-radius:14px;
+  background:var(--ink); color:var(--paper);
+  margin-bottom:30px;
+}
+.case-query .qmark{color:var(--gold-soft);}
+.case-grid{display:grid; grid-template-columns:1fr 1fr; gap:20px;}
+@media(max-width:760px){.case-grid{grid-template-columns:1fr;}}
+.case-card{
+  background:var(--card); border:1.5px solid var(--line); border-radius:16px; padding:22px;
+}
+.case-card .mod-tag{
+  font-family:var(--font-mono); font-size:.72rem; text-transform:uppercase; letter-spacing:.08em;
+  color:var(--gold); margin-bottom:14px; display:block;
+}
+.case-entry{padding:10px 0; border-top:1px dashed var(--line);}
+.case-entry:first-of-type{border-top:none;}
+.case-entry .term{font-weight:700; font-family:var(--font-mono); font-size:.85rem; color:var(--ink);}
+.case-entry p{font-size:.88rem; color:var(--ink-soft); margin-top:4px;}
+
+/* ============ TABLE (mapa) ============ */
+table.filemap{
+  width:100%; border-collapse:collapse;
+  font-size:.88rem;
+  background:var(--card); border:1.5px solid var(--line); border-radius:14px; overflow:hidden;
+}
+table.filemap th{
+  text-align:left; font-family:var(--font-mono); font-size:.72rem; text-transform:uppercase;
+  letter-spacing:.06em; color:var(--ink-faint);
+  padding:14px 18px; background:var(--paper-deep);
+}
+table.filemap td{padding:14px 18px; border-top:1px solid var(--line-soft); vertical-align:top;}
+table.filemap code{font-size:.82rem; color:var(--gold); font-weight:600;}
+
+/* ============ CALLOUT (limitações) ============ */
+.callout{
+  border-radius:16px; padding:24px 26px;
+  border:1.5px solid var(--gold-line);
+  background:linear-gradient(180deg, rgba(222,197,131,.18), rgba(222,197,131,.05));
+}
+.callout .eyebrow{margin-bottom:10px;}
+.callout p{color:var(--ink-soft); font-size:.95rem;}
+
+/* ============ FOOTER ============ */
+footer{
+  background:var(--ink); color:var(--paper);
+  padding:clamp(48px,7vw,80px) 0 32px;
+}
+.footer-top{
+  display:flex; justify-content:space-between; gap:40px; flex-wrap:wrap;
+  padding-bottom:36px; border-bottom:1px solid rgba(244,238,221,.16);
+  margin-bottom:24px;
+}
+.footer-word{
+  font-family:var(--font-display); font-weight:700; font-size:2.4rem;
+}
+.footer-word .dot{color:var(--gold-soft);}
+footer .lede{color:rgba(244,238,221,.65); max-width:420px;}
+.footer-cta{display:flex; gap:12px; flex-wrap:wrap;}
+.footer-meta{
+  display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px;
+  font-family:var(--font-mono); font-size:.75rem; color:rgba(244,238,221,.5);
+}
+
+.skip-link{
+  position:absolute; left:-999px; top:auto;
+  background:var(--ink); color:var(--paper); padding:10px 16px; border-radius:8px; z-index:100;
+}
+.skip-link:focus{left:16px; top:16px;}
+
+@media(max-width:860px){
+  nav.toc{display:none;}
+  .hamburger{display:inline-flex; flex-direction:column;}
+  .nav-cta .btn-ghost{display:none;}
+}
+</style>
 </head>
 <body>
 
 <a class="skip-link" href="#conteudo">Pular pro conteúdo</a>
 
-<button class="sidebar__toggle" id="sidebarToggle" aria-expanded="false" aria-controls="sidebar">☰ Sumário</button>
-
-<div class="shell">
-
-  <aside class="sidebar" id="sidebar">
-    <a href="#topo" class="sidebar__brand">
-      <img src="assets/logo-original.png" alt="Onimos">
-      <span class="sidebar__brand-text">onimos<small>documentação</small></span>
-    </a>
-
-    <nav class="sidebar__nav" aria-label="Sumário">
-      <p class="sidebar__nav-title">Sumário</p>
-      <ol>
-        <li><a href="#motivacao">Motivação</a></li>
-        <li><a href="#conceito">O conceito</a></li>
-        <li><a href="#estrutura">Estrutura de dados</a></li>
-        <li><a href="#escrita">Algoritmo de escrita</a></li>
-        <li><a href="#leitura">Algoritmo de leitura</a></li>
-        <li><a href="#busca">Algoritmo de busca</a></li>
-        <li><a href="#cache">Cache</a></li>
-        <li><a href="#auditoria">Auditoria</a></li>
-        <li><a href="#agente">O agente</a></li>
-        <li><a href="#caso-de-uso">Caso de uso</a></li>
-        <li><a href="#arquitetura">Arquitetura</a></li>
-        <li><a href="#limitacoes">Limitações</a></li>
-        <li><a href="#mapa">Mapa de arquivos</a></li>
-      </ol>
+<header class="site">
+  <div class="nav-row">
+    <a class="brand" href="#topo"><img src="assets/dino-icon.png" alt="" class="brand-icon">onimos</a>
+    <nav class="toc" id="toc" aria-label="Sumário">
+      <a href="#motivacao">Motivação</a>
+      <a href="#conceito">Conceito</a>
+      <a href="#estrutura">Estrutura</a>
+      <a href="#agente">Agente</a>
+      <a href="#demo">Demo</a>
+      <a href="#caso-de-uso">Caso de uso</a>
+      <a href="#arquitetura">Arquitetura</a>
+      <a href="#limitacoes">Limitações</a>
+      <a href="#mapa">Arquivos</a>
     </nav>
-
-    <div class="sidebar__footer">
-      <a href="https://github.com/">código no GitHub ↗</a>
-      <p class="sidebar__meta">v0.1.0 · MIT</p>
+    <div class="nav-cta">
+      <a class="btn btn-ghost" href="#demo">Experimente</a>
+      <a class="btn btn-primary" href="https://github.com/alessandrafaria/onimos.github.io" target="_blank" rel="noopener">código no GitHub ↗</a>
+      <button class="hamburger" id="hamburger" aria-label="Abrir menu" aria-expanded="false"><span></span><span></span><span></span></button>
     </div>
-  </aside>
+  </div>
+  <div class="progress-track"><div class="progress-bar" id="progressBar"></div></div>
+</header>
 
-  <main class="content" id="conteudo">
+<main id="conteudo">
 
-    <header class="doc-header" id="topo">
-      <p class="eyebrow">term store</p>
-      <h1>Onimos: um feature store para o significado de palavras em contexto</h1>
-      <p class="lede">
-        Camada de resolução de ambiguidade de termos de negócio, pensada
-        pra rodar antes de um agente de IA executar uma tarefa. Documenta
-        o problema que motivou o projeto, a estrutura de dados, os três
-        algoritmos (leitura, escrita, busca) e o agente que junta tudo.
-      </p>
-    </header>
+<!-- ============ HERO ============ -->
+<div id="topo"></div>
+<section class="hero">
+  <div class="wrap hero-inner">
+    <div class="headword-row">
+      <img src="assets/dino-icon.png" alt="Ícone do onimos: um dinossauro com circuitos" class="hero-icon">
+      <h1 class="headword">onimos</h1>
+      <span class="phonetic">/oˈnimus/</span>
+    </div>
+    <div class="pos-tag">substantivo · camada de grounding para agentes de IA</div>
 
-    <section class="doc-section" id="motivacao">
-      <h2><span class="num">01</span> Motivação</h2>
-      <p>
-        Agentes de IA recebem um pedido em linguagem natural e aplicam uma
-        tarefa sobre esse pedido sem ter garantia nenhuma de que
-        entenderam os termos do domínio da forma que o sistema espera. O
-        exemplo que deu origem a este projeto é direto: um pedido como
-        "liste os clientes" pode significar coisas diferentes dependendo
-        de onde ele é feito. No módulo de vendas, cliente é quem já
-        comprou. No módulo de parcerias, cliente pode ser o revendedor que
-        compra para revender, não para consumir. Um agente que resolve
-        "cliente" sempre do mesmo jeito, em qualquer contexto, vai acertar
-        na maior parte dos casos e errar silenciosamente nos outros — e o
-        erro silencioso é o pior tipo de erro, porque ninguém percebe até
-        o dado sair errado em algum relatório.
-      </p>
-      <p>
-        Esse problema tem nome fora do mundo de agentes de IA: é o
-        problema do vocabulário, ou polissemia de termos de domínio, bem
-        conhecido em sistemas de NLU empresarial e em ferramentas de
-        texto-para-SQL. A solução estabelecida nesses sistemas é uma
-        camada semântica — um glossário de negócio que fica entre o
-        pedido do usuário e a execução da tarefa, resolvendo o que cada
-        termo significa antes de deixar o agente agir.
-      </p>
-      <p>
-        Este documento descreve o onimos, uma implementação dessa camada
-        pensada explicitamente como um <strong>feature store de
-        significado</strong>: em vez de um dicionário chave-valor
-        estático, um registro versionado, com separação entre leitura
-        rápida e histórico auditável, e um motor de resolução que decide
-        quando é seguro resolver automaticamente e quando é preciso
-        perguntar.
-      </p>
-    </section>
+    <div class="definition-block">
+      <p><span class="num">1.</span>Um <strong>feature store para o significado de palavras em contexto</strong> — resolve o que "cliente", "ativo" ou "ciclo" significam antes de um agente de IA agir, em vez de deixar ele adivinhar.</p>
+    </div>
 
-    <section class="doc-section" id="conceito">
-      <h2><span class="num">02</span> O conceito: por que "feature store" e não "glossário"</h2>
-      <p>
-        Um feature store de machine learning existe para resolver um
-        problema estrutural: sem ele, times diferentes calculam a mesma
-        métrica de formas diferentes, e um modelo em treino acaba vendo
-        um valor diferente do que o mesmo modelo vê em produção — o
-        chamado training-serving skew. A solução é centralizar a
-        definição da feature num registro único, com dono, versão, e
-        dois modos de servir o dado: um armazenamento offline, com
-        histórico completo, usado para treino e auditoria; e um
-        armazenamento online, otimizado para latência baixa, usado para
-        servir a mesma feature em tempo real.
-      </p>
-      <p>
-        O mesmo problema estrutural existe para significado de palavra.
-        Sem um registro central, cada time interpreta "cliente ativo" à
-        sua maneira, cada pipeline de dados aplica sua própria regra, e
-        um agente de IA que consome esses dados herda a inconsistência
-        sem saber que ela existe. A diferença é que aqui a "feature" não
-        é um número — é uma definição em texto, associada a um escopo
-        (módulo, papel do usuário, tenant) que diz em qual contexto
-        aquela definição vale.
-      </p>
-      <p>
-        O nome onimos vem do sufixo grego -ônimo (nome), o mesmo presente
-        em sinônimo, hipônimo e homônimo. Cada palavra do domínio (o
-        lema, como "cliente") pode ter vários onimos — vários sentidos
-        possíveis — e o papel do sistema é decidir qual onimo se aplica a
-        um pedido específico.
-      </p>
+    <div class="example-usage">
+      "Liste os clientes ativos" — no <b>módulo financeiro</b> isso é contrato vigente; no <b>módulo de vendas</b>, é quem comprou nos últimos 90 dias. Um agente sem onimos escolhe uma leitura e erra em silêncio na outra.
+    </div>
 
-      <table>
-        <thead><tr><th>Feature store</th><th>Onimos</th></tr></thead>
-        <tbody>
-          <tr><td>Feature (nome + lógica de cálculo)</td><td>Onimo (um sentido específico de uma palavra)</td></tr>
-          <tr><td>Entidade (cliente, pedido)</td><td>Lema — a palavra em si ("cliente", "ativo")</td></tr>
-          <tr><td>Feature group</td><td>Conjunto de onimos de um mesmo lema</td></tr>
-          <tr><td>Catálogo/registro de features</td><td><code>OnimoRepository</code></td></tr>
-          <tr><td>Online store (baixa latência)</td><td><code>TTLCache</code> na frente do repositório</td></tr>
-          <tr><td>Offline store (histórico, treino)</td><td>Histórico versionado dentro do próprio <code>OnimoRepository</code></td></tr>
-          <tr><td>Point-in-time correctness</td><td>Mesmo princípio: resolução correta pra uma data passada</td></tr>
-          <tr><td>Feature monitoring / drift</td><td>Taxa de ambiguidade, taxa de correção humana, termos em desuso</td></tr>
-        </tbody>
-      </table>
-    </section>
+    <div class="hero-cta">
+      <a class="btn btn-gold" href="#demo">Ver a resolução ao vivo ↓</a>
+      <a class="btn btn-ghost" href="https://github.com/alessandrafaria/onimos.github.io" target="_blank" rel="noopener">código no GitHub ↗</a>
+    </div>
 
-    <section class="doc-section" id="estrutura">
-      <h2><span class="num">03</span> Estrutura de dados</h2>
+    <div class="credibility-strip">
+      <span>v0.1.0</span><span class="sep"></span>
+      <span>licença MIT</span><span class="sep"></span>
+      <span>Python · sem dependências externas</span><span class="sep"></span>
+      <span>3 algoritmos, 1 agente</span>
+    </div>
+  </div>
+</section>
 
-      <h3>3.1 OnimoEntry</h3>
-      <p>Cada sentido possível de um termo é representado por uma <code>OnimoEntry</code>:</p>
-      <pre class="code"><code>@dataclass
+<!-- ============ DEMO (elevated, right after hero) ============ -->
+<section id="demo" class="tint">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="section-kicker">
+        <span class="eyebrow">experimente</span>
+        <h2>O mesmo termo, resolvido de dois jeitos</h2>
+        <p class="lede">Escolha um termo do vocabulário cadastrado e troque o módulo de origem do pedido. O onimos decide se resolve sozinho ou se precisa perguntar — nunca adivinha.</p>
+      </div>
+    </div>
+
+    <div class="demo-shell">
+      <div class="demo-grid">
+        <div>
+          <span class="demo-label">termo do pedido</span>
+          <div class="pill-row" id="termPills">
+            <button class="pill" data-term="cliente">cliente</button>
+            <button class="pill" data-term="ativo">ativo</button>
+            <button class="pill" data-term="ciclo">ciclo</button>
+          </div>
+          <span class="demo-label">contexto da chamada</span>
+          <div class="pill-row" id="contextPills">
+            <button class="pill" data-ctx="vendas">módulo: vendas</button>
+            <button class="pill" data-ctx="parcerias">módulo: parcerias</button>
+            <button class="pill" data-ctx="financeiro">módulo: financeiro</button>
+            <button class="pill" data-ctx="none">sem contexto</button>
+          </div>
+          <p class="prose" style="font-size:.88rem;">A mesma consulta muda de resposta sem trocar uma linha de código do agente executor — só o sinal de contexto muda.</p>
+        </div>
+
+        <div>
+          <span class="demo-label">resultado</span>
+          <div class="demo-output" id="demoOutput">
+            <span class="status-badge" id="statusBadge"><span class="dot"></span><span id="statusText">selecione</span></span>
+            <div id="demoBody"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ MOTIVAÇÃO ============ -->
+<section id="motivacao">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="section-kicker">
+        <span class="eyebrow">01 · o problema</span>
+        <h2>O erro silencioso</h2>
+      </div>
+    </div>
+    <p class="lede">Agentes de IA recebem um pedido em linguagem natural e executam sem garantia de que entenderam os termos do domínio do jeito que o sistema espera.</p>
+    <p class="prose">O exemplo que deu origem a este projeto é direto: "liste os clientes" significa coisas diferentes dependendo de onde é pedido. No módulo de vendas, cliente é quem já comprou. No módulo de parcerias, cliente pode ser o revendedor que compra para revender, não para consumir. Um agente que resolve "cliente" sempre do mesmo jeito acerta na maioria dos casos — e erra silenciosamente nos outros. O erro silencioso é o pior tipo de erro, porque ninguém percebe até o dado sair errado num relatório.</p>
+    <p class="prose">Esse problema tem nome fora do mundo de agentes: <strong>polissemia de termos de domínio</strong>, bem conhecido em NLU empresarial e ferramentas de texto-para-SQL. A solução estabelecida é uma <strong>camada semântica</strong> — um glossário de negócio entre o pedido e a execução, resolvendo o que cada termo significa antes de deixar o agente agir. O onimos é essa camada, implementada como um feature store de significado: registro versionado, leitura rápida separada do histórico auditável, e um motor que decide quando é seguro resolver sozinho e quando é preciso perguntar.</p>
+  </div>
+</section>
+
+<!-- ============ CONCEITO ============ -->
+<section id="conceito" class="tint">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="section-kicker">
+        <span class="eyebrow">02 · o conceito</span>
+        <h2>Por que "feature store" e não "glossário"</h2>
+      </div>
+    </div>
+    <p class="lede">Um feature store de ML existe pra resolver o <em>training-serving skew</em>: times diferentes calculam a mesma métrica de formas diferentes. A solução é centralizar a definição num registro único, com dono, versão, e dois modos de servir o dado.</p>
+    <p class="prose" style="margin-bottom:30px;">O mesmo problema estrutural existe pra significado de palavra. A diferença é que aqui a "feature" não é um número — é uma definição em texto, associada a um escopo (módulo, papel do usuário, tenant) que diz em qual contexto ela vale. O nome vem do sufixo grego <em>-ônimo</em>, o mesmo de sinônimo, hipônimo e homônimo: cada lema pode ter vários onimos, e o sistema decide qual se aplica.</p>
+
+    <div class="compare-grid">
+      <div class="compare-col">
+        <span class="eyebrow" style="margin-bottom:6px;">mundo ML</span>
+        <h4>Feature store</h4>
+        <div class="compare-row"><span class="k">unidade</span><span class="v">Feature (nome + lógica)</span></div>
+        <div class="compare-row"><span class="k">sujeito</span><span class="v">Entidade (cliente, pedido)</span></div>
+        <div class="compare-row"><span class="k">agrupamento</span><span class="v">Feature group</span></div>
+        <div class="compare-row"><span class="k">registro</span><span class="v">Catálogo de features</span></div>
+        <div class="compare-row"><span class="k">baixa latência</span><span class="v">Online store</span></div>
+        <div class="compare-row"><span class="k">histórico</span><span class="v">Offline store</span></div>
+        <div class="compare-row"><span class="k">monitoramento</span><span class="v">Feature drift</span></div>
+      </div>
+      <div class="compare-vs">≈</div>
+      <div class="compare-col">
+        <span class="eyebrow" style="margin-bottom:6px;">onimos</span>
+        <h4>Feature store de significado</h4>
+        <div class="compare-row"><span class="k">unidade</span><span class="v">Onimo (um sentido da palavra)</span></div>
+        <div class="compare-row"><span class="k">sujeito</span><span class="v">Lema — a palavra em si</span></div>
+        <div class="compare-row"><span class="k">agrupamento</span><span class="v">Onimos de um mesmo lema</span></div>
+        <div class="compare-row"><span class="k">registro</span><span class="v"><code>OnimoRepository</code></span></div>
+        <div class="compare-row"><span class="k">baixa latência</span><span class="v"><code>TTLCache</code> na frente</span></div>
+        <div class="compare-row"><span class="k">histórico</span><span class="v">Versionado no repositório</span></div>
+        <div class="compare-row"><span class="k">monitoramento</span><span class="v">Taxa de ambiguidade / correção</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ESTRUTURA DE DADOS ============ -->
+<section id="estrutura">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="section-kicker">
+        <span class="eyebrow">03 · estrutura de dados</span>
+        <h2>OnimoEntry e OnimoRepository</h2>
+      </div>
+    </div>
+    <p class="lede">Cada sentido possível de um termo é uma <code>OnimoEntry</code>. O repositório agrupa entradas por termo e mantém um <code>watermark</code> global usado pelo agente pra saber quando o vocabulário mudou.</p>
+
+    <div class="code-card">
+      <div class="code-title"><span>src/onimos/repository.py</span><span>python</span></div>
+      <pre><code class="language-python">@dataclass
 class OnimoEntry:
     id: str
     term: str
@@ -162,131 +739,112 @@ class OnimoEntry:
     valid_from: datetime
     valid_to: datetime | None = None
 
-    def is_current_at(self, as_of: datetime) -&gt; bool:
+    def is_current_at(self, as_of: datetime) -> bool:
         return self.valid_from &lt;= as_of and (self.valid_to is None or as_of &lt; self.valid_to)</code></pre>
-      <ul>
-        <li><code>term</code> é o lema em minúsculas, a chave de agrupamento.</li>
-        <li><code>scope</code> é um dicionário livre de sinais de contexto — <code>{"modulo": "vendas"}</code>, <code>{"modulo": "vendas", "role": "analista"}</code>, ou vazio para uma definição genérica. É esse campo que separa este modelo de um dicionário chave-valor plano: em vez de uma definição por termo, existem várias, cada uma marcada com a condição em que se aplica.</li>
-        <li><code>excludes</code> guarda, como lista de strings, o que aquela definição deliberadamente não cobre — por exemplo, "cliente" no módulo de vendas exclui "revendedores". Hoje isso é só texto solto, não uma referência estruturada a outro onimo; a seção 3.3 discute por que isso é uma simplificação deliberada, não a forma final.</li>
-        <li><code>version</code>, <code>valid_from</code> e <code>valid_to</code> formam o mecanismo de versionamento. Uma entrada nunca é editada in-place: quando a definição de um termo muda, a entrada antiga recebe <code>valid_to</code> e uma nova é criada com <code>version</code> incrementado.</li>
-      </ul>
+    </div>
 
-      <h3>3.2 OnimoRepository</h3>
-      <p>O repositório agrupa entradas por termo e mantém um contador de versão global (<code>watermark</code>) usado por outras partes do sistema para saber quando o vocabulário mudou:</p>
-      <pre class="code"><code>class OnimoRepository:
-    def __init__(self):
-        self._by_term: dict[str, list[OnimoEntry]] = {}
-        self._lock = threading.RLock()
-        self._watermark = 0</code></pre>
-      <p>A implementação atual guarda tudo em memória, protegida por um <code>RLock</code> para segurança em ambiente com múltiplas threads. Em produção, isso corresponde à camada offline de um feature store — normalmente uma tabela num banco relacional, versionada da mesma forma.</p>
+    <p class="prose"><code>scope</code> é um dicionário livre de sinais de contexto — <code>{"modulo": "vendas"}</code>, ou vazio pra uma definição genérica. É esse campo que separa este modelo de um dicionário chave-valor plano: em vez de uma definição por termo, existem várias, cada uma marcada com a condição em que se aplica. <code>excludes</code> guarda o que uma definição deliberadamente não cobre. Uma entrada nunca é editada in-place: quando a definição muda, a antiga recebe <code>valid_to</code> e uma nova é criada com <code>version</code> incrementado.</p>
 
-      <h3>3.3 O que falta para ser uma ontologia de verdade</h3>
-      <p>O nome do projeto promete ontologia, mas a estrutura implementada é uma lista de entradas por termo, sem relação nenhuma entre elas. Um modelo ontológico completo trataria cada onimo como um nó de grafo, com arestas tipadas para outros onimos:</p>
-      <ul>
-        <li><strong>é-um / generaliza</strong>: "cliente ativo" herdaria a definição base de "cliente" e só adicionaria a restrição de tempo, em vez de duas entradas independentes que por acaso compartilham parte do texto.</li>
-        <li><strong>exclui</strong>: o campo <code>excludes</code>, hoje uma lista de strings soltas, viraria uma aresta real para outro onimo cadastrado.</li>
-        <li><strong>mesmo-que</strong>: sinônimos dentro de um domínio ("cliente ativo" e "cliente engajado" usados por times diferentes) apontariam para o mesmo onimo em vez de duplicar a definição em dois lugares.</li>
-      </ul>
-      <p>A implementação atual é o caso de uso mínimo que já resolve o problema original; o grafo é a extensão natural quando o número de lemas e relações justificar a complexidade adicional.</p>
-    </section>
+    <div class="callout" style="margin-top:28px;">
+      <span class="eyebrow">honestidade técnica</span>
+      <h4 style="margin-bottom:8px;">O que falta pra ser uma ontologia de verdade</h4>
+      <p>O nome promete ontologia, mas a estrutura hoje é uma lista de entradas por termo, sem relação entre elas. Um modelo completo trataria cada onimo como nó de grafo — <strong>é-um / generaliza</strong>, <strong>exclui</strong> como aresta real, <strong>mesmo-que</strong> pra sinônimos entre times. A implementação atual é o caso de uso mínimo que já resolve o problema original; o grafo é a extensão natural quando o volume justificar.</p>
+    </div>
+  </div>
+</section>
 
-    <section class="doc-section" id="escrita">
-      <h2><span class="num">04</span> Algoritmo de escrita</h2>
-      <p>Escrever uma nova definição nunca sobrescreve a anterior — fecha a versão vigente e abre uma nova:</p>
-      <pre class="code"><code>def add_version(self, term, definition, scope, excludes=None, as_of=None):
-    as_of = as_of or datetime.now(timezone.utc)
-    term = term.lower()
-    with self._lock:
-        existing = self._by_term.setdefault(term, [])
-        same_scope = [e for e in existing if e.scope == scope and e.valid_to is None]
-        next_version = 1
-        for e in same_scope:
-            e.valid_to = as_of
-            next_version = e.version + 1
-        entry = OnimoEntry(
-            id=uuid4().hex[:12], term=term, definition=definition, scope=scope,
-            excludes=excludes or [], version=next_version, valid_from=as_of, valid_to=None,
-        )
-        existing.append(entry)
-        self._watermark += 1
-        return entry</code></pre>
-      <p>O algoritmo localiza, dentro das entradas já existentes para aquele termo, qualquer uma com o mesmo <code>scope</code> e ainda vigente (<code>valid_to is None</code>), fecha essa entrada e cria a próxima versão. A escrita nunca é destrutiva: apagar informação exigiria uma operação separada e deliberada, que o sistema atual não expõe.</p>
-
-      <div class="callout">
-        <p>Esse comportamento é o que garante correção ponto-no-tempo. Um exemplo real, rodado sobre o próprio repositório:</p>
+<!-- ============ ESCRITA / VERSIONAMENTO ============ -->
+<section id="escrita" class="tint">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="section-kicker">
+        <span class="eyebrow">04 · algoritmo de escrita</span>
+        <h2>Nada é sobrescrito</h2>
       </div>
-      <pre class="code"><code>t_old = datetime.now(timezone.utc) - timedelta(days=30)
-repo.add_version("ativo", "Cliente que comprou nos últimos 90 dias.", {"modulo": "vendas"}, as_of=t_old)
-repo.add_version("ativo", "Cliente que comprou nos últimos 60 dias.", {"modulo": "vendas"})</code></pre>
+    </div>
+    <p class="lede">Escrever uma nova definição nunca apaga a anterior — fecha a versão vigente e abre uma nova. É o que garante correção ponto-no-tempo.</p>
 
-      <p>Consultando a definição vigente agora, o resultado é "Cliente que comprou nos últimos 60 dias." Consultando a definição vigente 29 dias atrás, o resultado é "Cliente que comprou nos últimos 90 dias." — a definição antiga, preservada, mesmo depois de uma atualização.</p>
-
-      <div class="strata" role="img" aria-label="Coluna mostrando duas versões da definição de cliente ativo ao longo do tempo">
-        <div class="strata__layer strata__layer--current">
-          <span class="strata__version">v2 · vigente</span>
-          <span class="strata__def">"comprou nos últimos 60 dias"</span>
-        </div>
-        <div class="strata__layer">
-          <span class="strata__version">v1 · fechada há 30 dias</span>
-          <span class="strata__def">"comprou nos últimos 90 dias"</span>
-        </div>
+    <div class="case-grid">
+      <div class="case-card" style="border-color:var(--line);">
+        <span class="mod-tag" style="color:var(--ink-faint);">v1 · fechada há 30 dias</span>
+        <p style="font-size:1.05rem; color:var(--ink); font-weight:600;">"Cliente que comprou nos últimos 90 dias."</p>
       </div>
-    </section>
-
-    <section class="doc-section" id="leitura">
-      <h2><span class="num">05</span> Algoritmo de leitura</h2>
-      <p>Ler significa duas coisas separadas: buscar as entradas candidatas de um termo, e decidir qual delas se aplica ao contexto atual.</p>
-
-      <h3>5.1 Busca de candidatos</h3>
-      <pre class="code"><code>def get_candidates(self, term, as_of=None):
-    as_of = as_of or datetime.now(timezone.utc)
-    with self._lock:
-        entries = self._by_term.get(term.lower(), [])
-        return [e for e in entries if e.is_current_at(as_of)]</code></pre>
-      <p>Um lookup direto no dict por termo, seguido de um filtro por vigência temporal. Sem <code>as_of</code>, o filtro usa o instante atual — coberto pelo cache (seção 7). Com <code>as_of</code> explícito, o filtro usa a data pedida — o caminho de auditoria, sempre direto ao repositório.</p>
-
-      <h3>5.2 Resolução de escopo</h3>
-      <p>Encontrados os candidatos, o agente decide qual se aplica pontuando cada entrada pelo número de chaves de escopo que batem com o contexto atual:</p>
-      <pre class="code"><code>@staticmethod
-def _match_score(entry, context_signals):
-    score = 0
-    for key, value in entry.scope.items():
-        if key not in context_signals or context_signals[key] != value:
-            return None
-        score += 1
-    return score</code></pre>
-      <p>Uma entrada com <code>scope={"modulo": "vendas"}</code> só pontua se o contexto atual tiver <code>modulo="vendas"</code>. Uma entrada com <code>scope={}</code> sempre pontua, com score zero — funciona como fallback.</p>
-
-      <div class="diagram-wrap">
-        <pre class="mermaid">
-flowchart TD
-    A[Termo extraído do pedido] --> B{Existe entrada cadastrada?}
-    B -->|não| C[not_in_glossary: passa sem bloquear]
-    B -->|sim| D{Alguma entrada pontua com o contexto?}
-    D -->|nenhuma| E[ambiguous: mostra todos os candidatos]
-    D -->|sim| F{Uma única entrada tem a pontuação máxima?}
-    F -->|sim| G[resolved: usa essa definição]
-    F -->|não, empate| H[ambiguous: gera pergunta de esclarecimento]
-        </pre>
+      <div class="case-card" style="border-color:var(--resolved-line); background:var(--resolved-bg);">
+        <span class="mod-tag" style="color:var(--resolved);">v2 · vigente</span>
+        <p style="font-size:1.05rem; color:var(--ink); font-weight:600;">"Cliente que comprou nos últimos 60 dias."</p>
       </div>
-      <p>O ponto central desse desenho é que ambiguidade nunca é resolvida por adivinhação. Quando duas entradas empatam em especificidade, ou quando nenhuma bate com o contexto disponível, o termo é sinalizado, não resolvido por um critério arbitrário.</p>
-    </section>
+    </div>
+    <p class="prose" style="margin-top:20px;">Consultando a definição vigente <em>hoje</em>, o resultado é v2. Consultando a definição vigente <em>29 dias atrás</em>, o resultado é v1 — preservada, mesmo depois da atualização. Apagar informação exigiria uma operação separada e deliberada, que o sistema atual não expõe.</p>
+  </div>
+</section>
 
-    <section class="doc-section" id="busca">
-      <h2><span class="num">06</span> Algoritmo de busca (extração de termos no texto)</h2>
-      <p>Antes de resolver qualquer termo, é preciso encontrar quais termos do pedido do usuário aparecem no vocabulário cadastrado. Essa etapa passou por três implementações.</p>
+<!-- ============ LEITURA / BUSCA ============ -->
+<section id="leitura">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="section-kicker">
+        <span class="eyebrow">05 · resolução de escopo</span>
+        <h2>Ambiguidade nunca é adivinhada</h2>
+      </div>
+    </div>
+    <p class="lede">Encontrados os candidatos, cada entrada pontua pelo número de chaves de escopo que batem com o contexto atual. Empate ou nenhuma pontuação vira pergunta, nunca um chute.</p>
 
-      <h3>6.1 Primeira tentativa: regex por termo</h3>
-      <pre class="code"><code>for term in glossary.terms():
-    if re.search(r"\b" + re.escape(term) + r"\b", text_lower):
-        found.append(term)</code></pre>
-      <p>O custo é proporcional ao tamanho do vocabulário, não ao tamanho do texto. Medido com 5000 termos sintéticos, o custo médio por extração ficou em torno de <strong>255 ms</strong>.</p>
+    <div class="pipeline">
+      <div class="pipe-step">
+        <span class="k">entrada</span>
+        <h4>Termo extraído</h4>
+        <p>Encontrado no pedido do usuário pelo matcher.</p>
+      </div>
+      <div class="pipe-step">
+        <span class="k">verificação</span>
+        <h4>Existe entrada cadastrada?</h4>
+        <p>Se não, passa direto — <code>not_in_glossary</code>.</p>
+      </div>
+      <div class="pipe-step branch-a">
+        <span class="k">score máximo único</span>
+        <h4>resolved</h4>
+        <p>Usa essa definição, sem ambiguidade.</p>
+      </div>
+      <div class="pipe-step branch-b">
+        <span class="k">empate ou zero</span>
+        <h4>ambiguous</h4>
+        <p>Gera pergunta de esclarecimento.</p>
+      </div>
+    </div>
+  </div>
+</section>
 
-      <h3>6.2 Segunda tentativa: automaton Aho-Corasick</h3>
-      <p>O glossário inteiro foi compilado uma vez num automaton (trie com fail-links, processada caractere a caractere). O ganho de leitura foi de ordens de grandeza — de 255 ms para cerca de <strong>0,01 ms</strong> por extração. Limitação: os fail-links dependem do vocabulário inteiro, então termo novo exige reconstruir a estrutura inteira. Adicionar 50 termos a um glossário de 5000 custou cerca de <strong>0,16 s</strong> no total.</p>
+<!-- ============ BUSCA / PERFORMANCE ============ -->
+<section id="busca" class="tint">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="section-kicker">
+        <span class="eyebrow">06 · algoritmo de busca</span>
+        <h2>Três tentativas até o hash set</h2>
+      </div>
+    </div>
+    <p class="lede">Antes de resolver qualquer termo, é preciso achar quais termos do pedido aparecem no vocabulário cadastrado. Medido com 5000 termos sintéticos:</p>
 
-      <h3>6.3 Implementação final: hash set com janela de palavras</h3>
-      <pre class="code"><code>def extract(self, text):
+    <div class="stat-track">
+      <div class="stat-card">
+        <div class="stat-num">255ms</div>
+        <div class="stat-label">regex por termo — custo proporcional ao vocabulário</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num">0,01ms</div>
+        <div class="stat-label">Aho-Corasick — rápido pra ler, caro pra reconstruir</div>
+      </div>
+      <div class="stat-card win">
+        <div class="stat-num">0,008ms</div>
+        <div class="stat-label">hash set com janela — implementação final</div>
+      </div>
+    </div>
+
+    <p class="prose">Na leitura, Aho-Corasick e hash set ficam tecnicamente empatados. Na escrita — adicionar 50 termos a um glossário de 5000 — o hash set é cerca de <strong>trinta vezes mais rápido</strong> (0,005s contra 0,16s), porque <code>add_term</code> é O(1) e não depende do resto do vocabulário. Como um glossário mantido por vários times recebe termo novo com frequência, essa diferença pesa mais no dia a dia.</p>
+
+    <div class="code-card">
+      <div class="code-title"><span>src/onimos/term_matcher.py</span><span>python</span></div>
+      <pre><code class="language-python">def extract(self, text):
     words = _TOKEN_RE.findall(text.lower())
     found = set()
     n = len(words)
@@ -303,170 +861,331 @@ flowchart TD
             if canonical:
                 found.add(canonical)
     return sorted(found)</code></pre>
+    </div>
+    <p class="prose"><strong>Ordenar os termos não ajuda; indexar por primeira palavra ajuda.</strong> Guardar um conjunto separado (<code>_first_words</code>) com as palavras que iniciam termo composto, e só montar janela de 2+ palavras quando a atual pertence a esse conjunto, é cerca de <strong>três vezes mais rápido</strong> que testar toda janela incondicionalmente — com o mesmo resultado.</p>
+  </div>
+</section>
 
-      <table>
-        <thead><tr><th></th><th>Leitura (por extração)</th><th>Escrita (50 termos novos)</th></tr></thead>
-        <tbody>
-          <tr><td>Aho-Corasick</td><td>~0,010 ms</td><td>~0,16 s</td></tr>
-          <tr><td>Hash set</td><td>~0,008 ms</td><td>~0,005 s</td></tr>
-        </tbody>
-      </table>
-      <p>Na leitura, as duas ficam tecnicamente empatadas. Na escrita, o hash set é cerca de <strong>trinta vezes mais rápido</strong>, porque <code>add_term</code> é O(1) e não depende do resto do vocabulário. Como um glossário de negócio mantido por vários times recebe termo novo com frequência, essa diferença pesa mais no dia a dia — por isso o hash set é a implementação final.</p>
-
-      <div class="callout">
-        <p><strong>Ordenar os termos não ajuda; indexar por primeira palavra ajuda.</strong> Testado: inserir os mesmos 5000 termos em ordem aleatória, alfabética e por tamanho decrescente não muda a velocidade de leitura — lookup em hash set é O(1) independente da ordem de inserção. O que muda de verdade é guardar um conjunto separado (<code>_first_words</code>) com as palavras que iniciam algum termo composto, e só montar janela de 2+ palavras quando a palavra atual pertence a esse conjunto: medido, cerca de <strong>três vezes mais rápido</strong> que testar toda janela incondicionalmente, com exatamente o mesmo resultado.</p>
+<!-- ============ CACHE + AUDITORIA ============ -->
+<section id="cache">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="section-kicker">
+        <span class="eyebrow">07–08 · online store e histórico</span>
+        <h2>Cache na frente, auditoria atrás</h2>
       </div>
+    </div>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <span class="icon-num">07 · TTLCache</span>
+        <h4>A camada online</h4>
+        <p>Thread-safe, com expiração por tempo e limite de tamanho (LRU quando excede). Só participa de consultas "agora" — consulta ponto-no-tempo vai direto ao repositório, porque é rara e usada principalmente por auditoria.</p>
+      </div>
+      <div class="feature-card">
+        <span class="icon-num">08 · AuditSink</span>
+        <h4>Toda resolução vira registro</h4>
+        <p>Resolvida ou ambígua, cada resolução gera uma entrada com termo, status, contexto e — quando resolvido — o <code>id</code> e a <code>version</code> exatos da definição escolhida, não só o texto. Interface mínima, trocável por Kafka, Kinesis ou logger estruturado em produção.</p>
+      </div>
+    </div>
+  </div>
+</section>
 
-      <h3>O que a extração ainda não faz</h3>
-      <p>A extração atual só reconhece o que já está cadastrado no repositório — não é um reconhecedor de entidades (NER) de verdade. Um termo novo não aparece na lista extraída, então nunca chega a ser avaliado; ele passa direto, sem bloquear o pedido. Substituir a extração por um NER ou uma chamada a um modelo de linguagem resolveria isso sem exigir mudança em nenhuma outra parte do sistema.</p>
-    </section>
+<!-- ============ AGENTE ============ -->
+<section id="agente" class="tint">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="section-kicker">
+        <span class="eyebrow">09 · o agente</span>
+        <h2>ContextGroundingAgent</h2>
+      </div>
+    </div>
+    <p class="lede">Junta as peças anteriores num pipeline único, chamado antes de qualquer agente que execute a tarefa de fato.</p>
 
-    <section class="doc-section" id="cache">
-      <h2><span class="num">07</span> Cache: a camada online</h2>
-      <p>Na frente do repositório, um cache TTL simples faz o papel de online store — a parte do feature store otimizada para latência, não para histórico:</p>
-      <pre class="code"><code>class TTLCache:
-    def __init__(self, ttl_seconds: float = 30.0, max_size: int = 50_000):
-        self._data: OrderedDict[str, tuple[float, object]] = OrderedDict()
-        self._lock = threading.Lock()</code></pre>
-      <p>Thread-safe, com expiração por tempo e um limite de tamanho que descarta a entrada menos recentemente usada quando excedido. Só participa de consultas "agora" — consulta ponto-no-tempo vai direto ao repositório, porque é rara (usada principalmente por auditoria) e não compensa cachear.</p>
-    </section>
-
-    <section class="doc-section" id="auditoria">
-      <h2><span class="num">08</span> Auditoria</h2>
-      <p>Toda resolução de termo, resolvida ou ambígua, gera uma entrada de auditoria através de uma interface mínima:</p>
-      <pre class="code"><code>class AuditSink(Protocol):
-    def write(self, entry: dict) -&gt; None: ...</code></pre>
-      <p>A implementação padrão (<code>InMemoryAuditSink</code>) só acumula em lista, útil para teste. Em produção, a mesma interface permite trocar o destino por uma fila (Kafka, Kinesis) ou logger estruturado. Cada entrada registra o termo, o status, o contexto usado, e — quando resolvido — o <code>id</code> e a <code>version</code> exatos da definição escolhida, não só o texto.</p>
-    </section>
-
-    <section class="doc-section" id="agente">
-      <h2><span class="num">09</span> O agente: ContextGroundingAgent</h2>
-      <p>O agente junta as peças anteriores num pipeline único, chamado antes de qualquer agente que execute a tarefa de fato.</p>
-
-      <h3>9.1 Construção e automaton incremental</h3>
-      <pre class="code"><code>def __init__(self, repository, cache=None, audit_sink=None):
-    self.repository = repository
-    self.cache = cache or TTLCache()
-    self.audit_sink = audit_sink or InMemoryAuditSink()
-    self._matcher = None
-    self._known_terms = set()
-    self._matcher_watermark = -1
-    self._ensure_matcher()</code></pre>
-      <p><code>_ensure_matcher</code> compara o <code>watermark</code> do repositório com o último valor visto. Se mudou, calcula a diferença entre os termos conhecidos e os atuais, e adiciona só os novos ao matcher — sem reconstruir o que já existia.</p>
-
-      <h3>9.2 O pipeline de ground()</h3>
-      <pre class="code"><code>def ground(self, query, context_signals, as_of=None):
-    self._ensure_matcher()
-    terms = self._matcher.extract(query)
-    resolutions = [self.resolve_term(t, context_signals, as_of) for t in terms]
-    ...</code></pre>
-      <p>Garante que o matcher está atualizado; extrai os termos do pedido; resolve cada termo; grava auditoria; monta o contexto fundamentado; coleta perguntas de esclarecimento:</p>
-      <pre class="code"><code>result = grounding_agent.ground(user_query, context_signals)
+    <div class="code-card">
+      <div class="code-title"><span>src/onimos/grounding_agent.py</span><span>python</span></div>
+      <pre><code class="language-python">result = grounding_agent.ground(user_query, context_signals)
 
 if result.needs_clarification:
     return ask_user(result.clarification_questions)
 
 executor_agent.run(prompt=result.grounded_context + "\n\nTarefa: " + user_query)</code></pre>
-      <p>Se algum termo ficou ambíguo, o pipeline para ali e devolve a pergunta — nenhuma tarefa é executada em cima de uma suposição. Pra processamento em lote, <code>ground_many</code> reaproveita o mesmo matcher e cache já aquecido entre chamadas.</p>
-    </section>
+    </div>
+    <p class="prose">Se algum termo ficou ambíguo, o pipeline para ali e devolve a pergunta — nenhuma tarefa é executada em cima de uma suposição. Pra processamento em lote, <code>ground_many</code> reaproveita o mesmo matcher e cache já aquecido entre chamadas.</p>
+  </div>
+</section>
 
-    <section class="doc-section" id="caso-de-uso">
-      <h2><span class="num">10</span> Caso de uso</h2>
-      <p>Consulta real, processada pelo agente: <strong>"Calcule o faturamento médio dos clientes ativos no último ciclo."</strong></p>
-      <p>O matcher reconhece três termos: <code>ativo</code>, <code>ciclo</code> e <code>cliente</code>. "Faturamento médio" não aparece — não está cadastrado, então passa direto, sem gerar contexto nem bloquear.</p>
-
-      <h4>contexto: módulo financeiro</h4>
-      <pre class="result-block">- 'ativo': Contrato ou assinatura que não está cancelado nem suspenso.
-- 'ciclo': Período de fechamento contábil, geralmente mensal.
-- 'cliente': Qualquer pessoa ou empresa cadastrada na base, independentemente de ter comprado.</pre>
-
-      <h4>mesma consulta, contexto: módulo vendas</h4>
-      <pre class="result-block">- 'ativo': Cliente que fez ao menos uma compra nos últimos 90 dias.
-- 'ciclo': Intervalo entre metas de vendas, geralmente trimestral.
-- 'cliente': Pessoa ou empresa que já efetuou pelo menos uma compra. (não inclui: revendedores)</pre>
-
-      <p>Um agente executor sem essa camada, sem saber de qual módulo veio o pedido, muito provavelmente assumiria a leitura mais comum — vendas — mesmo partindo de um contexto financeiro, e calcularia a média em cima da base errada de clientes.</p>
-
-      <h4>sem sinal de módulo</h4>
-      <p>"Cliente" ainda resolve sozinho, pela entrada de escopo vazio cadastrada como fallback. "Ativo" e "ciclo" não têm fallback, e geram pergunta:</p>
-      <pre class="result-block">O termo 'ativo' tem mais de um significado possível neste contexto. Qual se aplica?
-(1) Cliente que fez ao menos uma compra nos últimos 90 dias.
-(2) Contrato ou assinatura que não está cancelado nem suspenso.
-
-O termo 'ciclo' tem mais de um significado possível neste contexto. Qual se aplica?
-(1) Período de fechamento contábil, geralmente mensal.
-(2) Intervalo entre metas de vendas, geralmente trimestral.</pre>
-
-      <p>O comportamento distinto entre "cliente" (resolve sozinho) e "ativo"/"ciclo" (perguntam) não é um bug — é a consequência direta de uma decisão de cadastro.</p>
-
-      <h4>experimente</h4>
-      <div class="demo" role="group" aria-label="Demonstração interativa de resolução de termo">
-        <p class="demo__label">contexto da chamada</p>
-        <div class="demo__chips" id="chips">
-          <button class="chip" data-scope="vendas" aria-pressed="true">módulo: vendas</button>
-          <button class="chip" data-scope="parcerias" aria-pressed="false">módulo: parcerias</button>
-          <button class="chip" data-scope="financeiro" aria-pressed="false">módulo: financeiro</button>
-          <button class="chip" data-scope="" aria-pressed="false">sem contexto</button>
-        </div>
-        <div class="demo__resolution">
-          <div class="demo__term">
-            <span class="demo__term-label">termo</span>
-            <span class="demo__term-value">cliente</span>
-          </div>
-          <p class="demo__status" id="status">resolvido</p>
-          <p class="demo__text" id="definitionText"></p>
-        </div>
+<!-- ============ CASO DE USO ============ -->
+<section id="caso-de-uso">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="section-kicker">
+        <span class="eyebrow">10 · caso de uso real</span>
+        <h2>Mesma pergunta, duas respostas certas</h2>
       </div>
-    </section>
+    </div>
 
-    <section class="doc-section" id="arquitetura">
-      <h2><span class="num">11</span> Arquitetura, vista de cima</h2>
-      <div class="diagram-wrap">
-        <pre class="mermaid">
-flowchart TD
-    Q[Pedido do usuário] --> M[TermMatcher: extrai termos conhecidos]
-    M --> R{Para cada termo}
-    R --> C[TTLCache: online store]
-    C -->|hit| S[Resolução de escopo]
-    C -->|miss| REP[OnimoRepository: offline store, versionado]
-    REP --> C
-    REP --> S
-    S -->|resolvido| G[Contexto fundamentado]
-    S -->|ambíguo| P[Pergunta de esclarecimento]
-    G --> A[Log de auditoria]
-    P --> A
-    G --> EXE[Agente executor]
-        </pre>
+    <div class="case-query">
+      <span class="qmark">"</span>Calcule o faturamento médio dos clientes ativos no último ciclo.<span class="qmark">"</span>
+    </div>
+
+    <p class="prose" style="margin-bottom:24px;">O matcher reconhece três termos: <code>ativo</code>, <code>ciclo</code> e <code>cliente</code>. "Faturamento médio" não está cadastrado — passa direto, sem gerar contexto nem bloquear.</p>
+
+    <div class="case-grid">
+      <div class="case-card">
+        <span class="mod-tag">contexto: módulo financeiro</span>
+        <div class="case-entry"><span class="term">ativo</span><p>Contrato ou assinatura que não está cancelado nem suspenso.</p></div>
+        <div class="case-entry"><span class="term">ciclo</span><p>Período de fechamento contábil, geralmente mensal.</p></div>
+        <div class="case-entry"><span class="term">cliente</span><p>Qualquer pessoa ou empresa cadastrada na base, independentemente de ter comprado.</p></div>
       </div>
-    </section>
+      <div class="case-card">
+        <span class="mod-tag">contexto: módulo vendas</span>
+        <div class="case-entry"><span class="term">ativo</span><p>Cliente que fez ao menos uma compra nos últimos 90 dias.</p></div>
+        <div class="case-entry"><span class="term">ciclo</span><p>Intervalo entre metas de vendas, geralmente trimestral.</p></div>
+        <div class="case-entry"><span class="term">cliente</span><p>Pessoa ou empresa que já efetuou pelo menos uma compra. (não inclui: revendedores)</p></div>
+      </div>
+    </div>
 
-    <section class="doc-section" id="limitacoes">
-      <h2><span class="num">12</span> Limitações conhecidas</h2>
-      <p>O repositório em memória não sobrevive a um restart nem é compartilhado entre processos — o passo real seguinte para produção é uma tabela versionada num banco relacional. O cache é local a cada instância do agente; com múltiplas instâncias, cada uma mantém seu próprio TTL, o que é aceitável enquanto o TTL for curto o bastante, mas exigiria um Redis compartilhado se a leitura precisar ser idêntica entre instâncias.</p>
-      <p>A extração de termos ainda depende inteiramente do que já está cadastrado, sem cobertura para vocabulário novo. E a camada ontológica descrita na seção 3.3 — relações entre onimos, herança de definição, exclusões como arestas de verdade — permanece uma extensão conceitual, não implementada; o sistema atual resolve ambiguidade por escopo, não por hierarquia de sentidos.</p>
-    </section>
+    <p class="prose" style="margin-top:24px;">Um agente executor sem essa camada, sem saber de qual módulo veio o pedido, muito provavelmente assumiria a leitura mais comum — vendas — mesmo partindo de um contexto financeiro, e calcularia a média em cima da base errada de clientes. Quer ver o comportamento sem sinal de módulo? <a href="#demo" style="color:var(--gold); font-weight:700;">volte pra demo ↑</a> e selecione "sem contexto".</p>
+  </div>
+</section>
 
-    <section class="doc-section" id="mapa">
-      <h2><span class="num">13</span> Mapa de arquivos</h2>
-      <table class="filemap">
-        <thead><tr><th>Arquivo</th><th>Papel</th></tr></thead>
-        <tbody>
-          <tr><td><code>src/onimos/repository.py</code></td><td><code>OnimoEntry</code>, <code>OnimoRepository</code> — estrutura de dados e algoritmos de leitura/escrita versionada</td></tr>
-          <tr><td><code>src/onimos/term_matcher.py</code></td><td><code>TermMatcher</code> — algoritmo de busca</td></tr>
-          <tr><td><code>src/onimos/cache.py</code></td><td><code>TTLCache</code> — camada online</td></tr>
-          <tr><td><code>src/onimos/audit.py</code></td><td><code>AuditSink</code>, <code>InMemoryAuditSink</code></td></tr>
-          <tr><td><code>src/onimos/grounding_agent.py</code></td><td><code>ContextGroundingAgent</code> — o agente</td></tr>
-          <tr><td><code>examples/</code></td><td>Exemplos prontos pra rodar</td></tr>
-          <tr><td><code>benchmarks/</code></td><td>Scripts de medição citados na seção 6</td></tr>
-          <tr><td><code>tests/</code></td><td>Suíte pytest cobrindo repositório, matcher e agente</td></tr>
-        </tbody>
-      </table>
-    </section>
+<!-- ============ ARQUITETURA ============ -->
+<section id="arquitetura" class="tint">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="section-kicker">
+        <span class="eyebrow">11 · arquitetura, vista de cima</span>
+        <h2>Do pedido ao contexto fundamentado</h2>
+      </div>
+    </div>
+    <div class="pipeline">
+      <div class="pipe-step">
+        <span class="k">entrada</span>
+        <h4>Pedido do usuário</h4>
+        <p>Linguagem natural, sem estrutura.</p>
+      </div>
+      <div class="pipe-step">
+        <span class="k">extração</span>
+        <h4>TermMatcher</h4>
+        <p>Extrai termos conhecidos do texto.</p>
+      </div>
+      <div class="pipe-step">
+        <span class="k">online store</span>
+        <h4>TTLCache</h4>
+        <p>Hit resolve na hora; miss vai ao repositório.</p>
+      </div>
+      <div class="pipe-step">
+        <span class="k">offline store</span>
+        <h4>OnimoRepository</h4>
+        <p>Versionado, fonte da verdade.</p>
+      </div>
+      <div class="pipe-step branch-a">
+        <span class="k">resolvido</span>
+        <h4>Contexto fundamentado</h4>
+        <p>Segue pro agente executor.</p>
+      </div>
+      <div class="pipe-step branch-b">
+        <span class="k">ambíguo</span>
+        <h4>Pergunta de esclarecimento</h4>
+        <p>Pipeline pausa e pergunta.</p>
+      </div>
+    </div>
+  </div>
+</section>
 
-  </main>
-</div>
+<!-- ============ LIMITAÇÕES ============ -->
+<section id="limitacoes">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="section-kicker">
+        <span class="eyebrow">12 · limitações conhecidas</span>
+        <h2>O que ainda não resolve</h2>
+      </div>
+    </div>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <h4>Persistência</h4>
+        <p>O repositório em memória não sobrevive a um restart nem é compartilhado entre processos. O passo real seguinte pra produção é uma tabela versionada num banco relacional.</p>
+      </div>
+      <div class="feature-card">
+        <h4>Cache distribuído</h4>
+        <p>O cache é local a cada instância do agente. Aceitável com TTL curto; exigiria um Redis compartilhado se a leitura precisar ser idêntica entre instâncias.</p>
+      </div>
+      <div class="feature-card">
+        <h4>Vocabulário novo</h4>
+        <p>A extração de termos depende inteiramente do que já está cadastrado — não é um NER de verdade. Termo novo passa direto, sem bloquear.</p>
+      </div>
+      <div class="feature-card">
+        <h4>Camada ontológica</h4>
+        <p>Relações entre onimos, herança de definição e exclusões como arestas de verdade seguem como extensão conceitual — não implementada.</p>
+      </div>
+    </div>
+  </div>
+</section>
 
-<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
-<script src="script.js"></script>
+<!-- ============ MAPA DE ARQUIVOS ============ -->
+<section id="mapa" class="tint">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="section-kicker">
+        <span class="eyebrow">13 · mapa de arquivos</span>
+        <h2>Onde está cada peça</h2>
+      </div>
+    </div>
+    <table class="filemap">
+      <thead><tr><th>arquivo</th><th>papel</th></tr></thead>
+      <tbody>
+        <tr><td><code>src/onimos/repository.py</code></td><td>OnimoEntry, OnimoRepository — estrutura de dados e algoritmos de leitura/escrita versionada</td></tr>
+        <tr><td><code>src/onimos/term_matcher.py</code></td><td>TermMatcher — algoritmo de busca</td></tr>
+        <tr><td><code>src/onimos/cache.py</code></td><td>TTLCache — camada online</td></tr>
+        <tr><td><code>src/onimos/audit.py</code></td><td>AuditSink, InMemoryAuditSink</td></tr>
+        <tr><td><code>src/onimos/grounding_agent.py</code></td><td>ContextGroundingAgent — o agente</td></tr>
+        <tr><td><code>examples/</code></td><td>Exemplos prontos pra rodar</td></tr>
+        <tr><td><code>benchmarks/</code></td><td>Scripts de medição citados na seção de busca</td></tr>
+        <tr><td><code>tests/</code></td><td>Suíte pytest cobrindo repositório, matcher e agente</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="footer-top">
+      <div>
+        <div class="footer-word">onimos<span class="dot">.</span></div>
+        <p class="lede" style="margin-top:14px;">Camada de resolução de ambiguidade de termos de negócio, pra rodar antes de um agente de IA executar uma tarefa.</p>
+      </div>
+      <div class="footer-cta">
+        <a class="btn btn-gold" href="https://github.com/alessandrafaria/onimos.github.io" target="_blank" rel="noopener">código no GitHub ↗</a>
+        <a class="btn btn-ghost" style="border-color:rgba(244,238,221,.35); color:var(--paper);" href="#demo">Experimente</a>
+      </div>
+    </div>
+    <div class="footer-meta">
+      <span>v0.1.0 · licença MIT</span>
+      <span>documentação técnica do onimos</span>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js"></script>
+<script>
+if (window.hljs) { hljs.highlightAll(); }
+
+/* ---------- scroll progress bar ---------- */
+const progressBar = document.getElementById('progressBar');
+function updateProgress(){
+  const h = document.documentElement;
+  const scrolled = h.scrollTop;
+  const height = h.scrollHeight - h.clientHeight;
+  progressBar.style.width = height > 0 ? (scrolled / height * 100) + '%' : '0%';
+}
+document.addEventListener('scroll', updateProgress, {passive:true});
+updateProgress();
+
+/* ---------- scrollspy ---------- */
+const tocLinks = Array.from(document.querySelectorAll('nav.toc a'));
+const sections = tocLinks.map(a => document.querySelector(a.getAttribute('href'))).filter(Boolean);
+const spy = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    const id = '#' + entry.target.id;
+    const link = tocLinks.find(a => a.getAttribute('href') === id);
+    if (!link) return;
+    if (entry.isIntersecting) {
+      tocLinks.forEach(a => a.classList.remove('active'));
+      link.classList.add('active');
+    }
+  });
+}, { rootMargin: '-40% 0px -50% 0px', threshold: 0 });
+sections.forEach(s => spy.observe(s));
+
+/* ---------- mobile menu (simple toggle reveals toc inline) ---------- */
+const hamburger = document.getElementById('hamburger');
+const toc = document.getElementById('toc');
+hamburger?.addEventListener('click', () => {
+  const open = toc.style.display === 'flex';
+  toc.style.display = open ? 'none' : 'flex';
+  toc.style.flexDirection = 'column';
+  toc.style.position = 'absolute';
+  toc.style.top = '64px';
+  toc.style.left = '0';
+  toc.style.right = '0';
+  toc.style.background = 'var(--paper)';
+  toc.style.padding = '12px 20px 20px';
+  toc.style.borderBottom = '1px solid var(--line)';
+  hamburger.setAttribute('aria-expanded', String(!open));
+});
+
+/* ---------- demo data & logic ---------- */
+const DEMO_DATA = {
+  cliente: {
+    vendas:     { status:'resolved',  def:'Pessoa ou empresa que já efetuou pelo menos uma compra. (não inclui: revendedores)' },
+    parcerias:  { status:'resolved',  def:'Revendedor que compra para revender, não para consumir.' },
+    financeiro: { status:'resolved',  def:'Qualquer pessoa ou empresa cadastrada na base, independentemente de ter comprado.' },
+    none:       { status:'resolved',  def:'Qualquer pessoa ou empresa vinculada ao tenant, independentemente do tipo de relação comercial. (fallback genérico, escopo vazio)' }
+  },
+  ativo: {
+    vendas:     { status:'resolved',  def:'Cliente que fez ao menos uma compra nos últimos 90 dias.' },
+    parcerias:  { status:'ambiguous', candidates:['Cliente que fez ao menos uma compra nos últimos 90 dias. (vendas)','Contrato ou assinatura que não está cancelado nem suspenso. (financeiro)'] },
+    financeiro: { status:'resolved',  def:'Contrato ou assinatura que não está cancelado nem suspenso.' },
+    none:       { status:'ambiguous', candidates:['Cliente que fez ao menos uma compra nos últimos 90 dias. (vendas)','Contrato ou assinatura que não está cancelado nem suspenso. (financeiro)'] }
+  },
+  ciclo: {
+    vendas:     { status:'resolved',  def:'Intervalo entre metas de vendas, geralmente trimestral.' },
+    parcerias:  { status:'ambiguous', candidates:['Período de fechamento contábil, geralmente mensal. (financeiro)','Intervalo entre metas de vendas, geralmente trimestral. (vendas)'] },
+    financeiro: { status:'resolved',  def:'Período de fechamento contábil, geralmente mensal.' },
+    none:       { status:'ambiguous', candidates:['Período de fechamento contábil, geralmente mensal. (financeiro)','Intervalo entre metas de vendas, geralmente trimestral. (vendas)'] }
+  }
+};
+
+let currentTerm = 'cliente';
+let currentCtx = 'vendas';
+
+const termPills = document.querySelectorAll('#termPills .pill');
+const ctxPills = document.querySelectorAll('#contextPills .pill');
+const output = document.getElementById('demoOutput');
+const statusBadge = document.getElementById('statusBadge');
+const statusText = document.getElementById('statusText');
+const demoBody = document.getElementById('demoBody');
+
+function renderDemo(){
+  const data = DEMO_DATA[currentTerm][currentCtx];
+  output.classList.remove('state-resolved','state-ambiguous');
+  statusBadge.classList.remove('resolved','ambiguous');
+
+  if (data.status === 'resolved') {
+    output.classList.add('state-resolved');
+    statusBadge.classList.add('resolved');
+    statusText.textContent = 'resolvido';
+    demoBody.innerHTML = `<p class="demo-def">"${data.def}"</p><p class="demo-note">termo: <code>${currentTerm}</code> · escopo bateu com o contexto informado</p>`;
+  } else {
+    output.classList.add('state-ambiguous');
+    statusBadge.classList.add('ambiguous');
+    statusText.textContent = 'ambíguo';
+    const items = data.candidates.map(c => `<li>${c}</li>`).join('');
+    demoBody.innerHTML = `<p class="demo-note" style="margin-bottom:4px;">nenhuma entrada pontuou (ou houve empate) — o pipeline pergunta:</p><ul class="demo-candidates">${items}</ul>`;
+  }
+}
+
+termPills.forEach(p => p.addEventListener('click', () => {
+  currentTerm = p.dataset.term;
+  termPills.forEach(x => x.classList.remove('is-active'));
+  p.classList.add('is-active');
+  renderDemo();
+}));
+ctxPills.forEach(p => p.addEventListener('click', () => {
+  currentCtx = p.dataset.ctx;
+  ctxPills.forEach(x => x.classList.remove('is-active'));
+  p.classList.add('is-active');
+  renderDemo();
+}));
+
+// initial state
+termPills[0].classList.add('is-active');
+ctxPills[0].classList.add('is-active');
+renderDemo();
+</script>
 </body>
 </html>
