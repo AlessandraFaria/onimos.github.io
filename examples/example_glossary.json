@@ -1,0 +1,37 @@
+{
+  "cliente": [
+    {
+      "escopo": {"modulo": "vendas"},
+      "definicao": "Pessoa ou empresa que já efetuou pelo menos uma compra.",
+      "exclui": ["revendedores"]
+    },
+    {
+      "escopo": {"modulo": "parcerias"},
+      "definicao": "Revendedor autorizado que compra para revenda, não para consumo final."
+    },
+    {
+      "escopo": {},
+      "definicao": "Qualquer pessoa ou empresa cadastrada na base, independentemente de ter comprado."
+    }
+  ],
+  "ativo": [
+    {
+      "escopo": {"modulo": "vendas"},
+      "definicao": "Cliente que fez ao menos uma compra nos últimos 90 dias."
+    },
+    {
+      "escopo": {"modulo": "financeiro"},
+      "definicao": "Contrato ou assinatura que não está cancelado nem suspenso."
+    }
+  ],
+  "conta": [
+    {
+      "escopo": {"modulo": "financeiro"},
+      "definicao": "Conta contábil ou bancária associada a uma transação."
+    },
+    {
+      "escopo": {"modulo": "produto"},
+      "definicao": "Conta de usuário (login) dentro da plataforma."
+    }
+  ]
+}
