@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>onimos — term store pra agentes de IA</title>
+<meta name="description" content="Onimos resolve o que um termo de negócio significa antes de um agente de IA agir sobre ele, com um repositório versionado inspirado em feature store.">
+<link rel="icon" href="assets/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<a class="skip-link" href="#conteudo">Pular pro conteúdo</a>
+
+<header class="topbar">
+  <a href="#topo" class="topbar__brand">
+    <img src="assets/logo.png" alt="" class="topbar__mark" width="32" height="32">
+    <span>onimos</span>
+  </a>
+  <nav class="topbar__nav" aria-label="Navegação principal">
+    <a href="#problema">O problema</a>
+    <a href="#funcionamento">Como funciona</a>
+    <a href="#instalacao">Instalação</a>
+    <a href="https://github.com/" class="topbar__cta">GitHub ↗</a>
+  </nav>
+</header>
+
+<main id="conteudo">
+
+  <section class="hero" id="topo">
+    <div class="hero__intro">
+      <img src="assets/logo.png" alt="Onimos: logo de um dinossauro desenhado em traço de circuito" class="hero__logo">
+      <p class="eyebrow">term store</p>
+      <h1>"Cliente" não significa a mesma coisa em dois lugares da sua empresa.</h1>
+      <p class="hero__lede">
+        Onimos é a camada que resolve isso antes de um agente de IA agir —
+        um termo de negócio pode ter várias definições cadastradas, cada
+        uma marcada com o contexto em que vale. Quando o contexto não é
+        suficiente pra decidir, o agente pergunta em vez de adivinhar.
+      </p>
+    </div>
+
+    <div class="demo" role="group" aria-label="Demonstração interativa de resolução de termo">
+      <p class="demo__label">contexto da chamada</p>
+      <div class="demo__chips" id="chips">
+        <button class="chip" data-scope="vendas" aria-pressed="true">módulo: vendas</button>
+        <button class="chip" data-scope="parcerias" aria-pressed="false">módulo: parcerias</button>
+        <button class="chip" data-scope="financeiro" aria-pressed="false">módulo: financeiro</button>
+        <button class="chip" data-scope="" aria-pressed="false">sem contexto</button>
+      </div>
+
+      <div class="demo__resolution">
+        <div class="demo__term">
+          <span class="demo__term-label">termo</span>
+          <span class="demo__term-value">cliente</span>
+        </div>
+        <div class="demo__arrow" aria-hidden="true">→</div>
+        <div class="demo__definition" id="definition">
+          <p class="demo__status" id="status">resolvido</p>
+          <p class="demo__text" id="definitionText"></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="problema" id="problema">
+    <p class="eyebrow">o problema</p>
+    <h2>Um agente que resolve termo sempre do mesmo jeito erra sem avisar.</h2>
+    <div class="contraste">
+      <div class="contraste__card">
+        <p class="contraste__contexto">módulo de vendas</p>
+        <p class="contraste__def">"Cliente" é pessoa ou empresa que já efetuou pelo menos uma compra. Não inclui revendedores.</p>
+      </div>
+      <div class="contraste__card contraste__card--accent">
+        <p class="contraste__contexto">módulo de parcerias</p>
+        <p class="contraste__def">"Cliente" é o revendedor autorizado que compra pra revender, não pra consumo final.</p>
+      </div>
+    </div>
+    <p class="problema__conclusao">
+      As duas definições estão certas — cada uma no seu módulo. Um agente
+      que aplica só uma delas em toda consulta acerta na maioria dos
+      pedidos e erra, sem sinalizar nada, exatamente nos casos em que o
+      significado muda.
+    </p>
+  </section>
+
+  <section class="funcionamento" id="funcionamento">
+    <p class="eyebrow">como funciona</p>
+    <h2>Quatro etapas, nessa ordem, antes de qualquer tarefa ser executada.</h2>
+
+    <ol class="pipeline">
+      <li class="pipeline__step">
+        <span class="pipeline__num">01</span>
+        <h3>Extração</h3>
+        <p>O texto do pedido é comparado contra os termos cadastrados no repositório. Só o que está cadastrado é reconhecido.</p>
+      </li>
+      <li class="pipeline__step">
+        <span class="pipeline__num">02</span>
+        <h3>Resolução por escopo</h3>
+        <p>Cada definição candidata é pontuada pelas chaves de contexto que batem com a chamada atual. A mais específica vence.</p>
+      </li>
+      <li class="pipeline__step">
+        <span class="pipeline__num">03</span>
+        <h3>Contexto ou pergunta</h3>
+        <p>Se uma definição vence sozinha, seu texto é anexado à tarefa. Se duas empatam, o agente pergunta em vez de escolher.</p>
+      </li>
+      <li class="pipeline__step">
+        <span class="pipeline__num">04</span>
+        <h3>Auditoria</h3>
+        <p>Toda resolução, decidida ou não, é registrada com o termo, o contexto e a versão exata da definição usada.</p>
+      </li>
+    </ol>
+  </section>
+
+  <section class="tempo">
+    <p class="eyebrow">correção ponto-no-tempo</p>
+    <h2>Nenhuma definição é sobrescrita — só fechada e substituída.</h2>
+    <p class="tempo__lede">
+      Atualizar "cliente ativo" de 90 pra 60 dias não apaga a definição
+      antiga. Ela fica registrada com a data em que deixou de valer, então
+      um log de auditoria de meses atrás continua fazendo sentido.
+    </p>
+
+    <div class="strata" role="img" aria-label="Coluna de camadas mostrando duas versões da definição de cliente ativo ao longo do tempo">
+      <div class="strata__layer strata__layer--current">
+        <span class="strata__version">v2 · vigente</span>
+        <span class="strata__def">"comprou nos últimos 60 dias"</span>
+      </div>
+      <div class="strata__layer">
+        <span class="strata__version">v1 · fechada há 30 dias</span>
+        <span class="strata__def">"comprou nos últimos 90 dias"</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="instalacao" id="instalacao">
+    <p class="eyebrow">instalação</p>
+    <h2>Sem dependência externa em runtime.</h2>
+    <pre class="code"><code>git clone https://github.com/&lt;seu-usuario&gt;/onimos.git
+cd onimos
+pip install -e ".[dev]"
+pytest -q</code></pre>
+
+    <pre class="code"><code>from onimos import OnimoRepository, ContextGroundingAgent
+
+repo = OnimoRepository()
+repo.add_version(
+    "cliente",
+    "Pessoa ou empresa que já efetuou pelo menos uma compra.",
+    scope={"modulo": "vendas"},
+)
+
+agent = ContextGroundingAgent(repo)
+result = agent.ground("liste os clientes", {"modulo": "vendas"})
+print(result.grounded_context)</code></pre>
+
+    <div class="repo-tree">
+      <p class="repo-tree__label">estrutura do repositório</p>
+      <pre><code>src/onimos/    pacote principal
+examples/      exemplos prontos pra rodar
+benchmarks/    scripts de medição de desempenho
+tests/         suíte pytest
+docs/          documentação de arquitetura</code></pre>
+    </div>
+  </section>
+
+</main>
+
+<footer class="rodape">
+  <img src="assets/logo.png" alt="" class="rodape__mark" width="28" height="28">
+  <p>onimos · MIT · <a href="https://github.com/">código no GitHub ↗</a></p>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>
