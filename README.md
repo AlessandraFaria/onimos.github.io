@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://github.com/AlessandraFaria/onimos.github.io/blob/main/Captura%20de%20tela%202026-08-23%20224804.png" alt="Logo">
+</p>
+
 # onimos
 
 Camada de resolução de ambiguidade de termos de negócio, pensada pra rodar antes de um agente de IA executar uma tarefa. Resolve o que um termo como "cliente" ou "ativo" significa no contexto de um pedido específico, em vez de deixar o agente assumir o significado mais comum e errar silenciosamente nos outros casos.
